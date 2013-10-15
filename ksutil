@@ -3,38 +3,103 @@
 import os
 import sys
 import argparse
+import yaml
+import random
+import string
 
 from keystoneclient.v2_0 import client
 import keystoneclient.exceptions
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--user', '-u', action='append', default=[])
+    p.add_argument('--user', '-u',
+            action='append',
+            default=[],
+            help='Given <user>:<tenant>:<password>, create <tenant> if '\
+                    'necessary, create <user> if necessary, and set the '\
+                    'password for <user> to <password>')
+    p.add_argument('--tenant', '-t',
+            action='append',
+            default=[],
+            help='Create <tenant> if it does not already exist')
+    p.add_argument('--config', '-f')
+    p.add_argument('--pwlen', help='Length of generated passwords.',
+            default=12)
     return p.parse_args()
 
 def main():
+    cf = {}
     args = parse_args()
+
+    if args.config:
+        with open(args.config) as fd:
+            cf = yaml.load(fd).get('keystone')
+
+    if not 'users' in cf:
+        cf['users'] = []
+    if not 'tenants' in cf:
+        cf['tenants'] = []
+
+    for tenantname in args.tenant:
+        cf['tenants'].append({'name': tenantname})
+
+    for userspec in args.user:
+        username, tenantname, password = userspec.split(':')
+        cf['users'].append({
+            'name': username,
+            'tenant': tenantname,
+            'password': password,
+            })
+
     keystone = client.Client(
             username=os.environ['OS_USERNAME'],
             password=os.environ['OS_PASSWORD'],
             tenant_name=os.environ['OS_TENANT_NAME'],
             auth_url=os.environ['OS_AUTH_URL'])
 
-    for userspec in args.user:
-        username, tenantname, password = userspec.split(':')
+    for tenant in cf['tenants']:
+        assert 'name' in tenant
+        assert tenant.get('enabled', 'true').lower() in ['true', 'false']
 
         try:
-            tenant = keystone.tenants.find(name=tenantname)
+            tenant = keystone.tenants.find(name=tenant['name'])
         except keystoneclient.exceptions.NotFound:
-            print 'creating tenant:', tenantname
-            tenant = keystone.tenants.create(tenantname)
+            print 'creating tenant: %(name)s' % tenant
+            tenant = keystone.tenants.create(tenant['name'],
+                    description=tenant.get('description'),
+                    enabled=(tenant.get('enabled', 'true').lower() == 'true'))
+
+    for user in cf['users']:
+        assert 'tenant' in user
+        assert 'name' in user
+        assert user.get('enabled', 'true').lower() in ['true', 'false']
 
         try:
-            user = keystone.users.find(name=username)
+            tenant = keystone.tenants.find(name=user['tenant'])
         except keystoneclient.exceptions.NotFound:
-            print 'creating user:', username
-            user = keystone.users.create(username, password, username,
-                    tenant_id = tenant.id)
+            print 'creating tenant: %(tenant)s' % user
+            tenant = keystone.tenants.create(user['tenant'])
+
+        password = user.get('password')
+        if not password:
+            password = ''.join(
+                    random.sample(string.letters + string.digits, args.pwlen))
+
+        try:
+            user = keystone.users.find(name=user['name'])
+
+            print 'setting password for: %s to: %s' % (
+                    user.name, password)
+            keystone.users.update_password(user, password)
+        except keystoneclient.exceptions.NotFound:
+            print 'creating user: %s with password: %s' % (
+                    user['name'], password)
+            user = keystone.users.create(
+                    user['name'],
+                    password,
+                    user.get('email', user['name']),
+                    tenant_id = tenant.id,
+                    enabled=(user.get('enabled', 'true').lower() == 'true'))
 
 if __name__ == '__main__':
     main()
