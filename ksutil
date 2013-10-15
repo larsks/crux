@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import os
+import sys
+import argparse
+
+from keystoneclient.v2_0 import client
+import keystoneclient.exceptions
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument('--user', '-u', action='append', default=[])
+    return p.parse_args()
+
+def main():
+    args = parse_args()
+    keystone = client.Client(
+            username=os.environ['OS_USERNAME'],
+            password=os.environ['OS_PASSWORD'],
+            tenant_name=os.environ['OS_TENANT_NAME'],
+            auth_url=os.environ['OS_AUTH_URL'])
+
+    for userspec in args.user:
+        username, tenantname, password = userspec.split(':')
+
+        try:
+            tenant = keystone.tenants.find(name=tenantname)
+        except keystoneclient.exceptions.NotFound:
+            print 'creating tenant:', tenantname
+            tenant = keystone.tenants.create(tenantname)
+
+        try:
+            user = keystone.users.find(name=username)
+        except keystoneclient.exceptions.NotFound:
+            print 'creating user:', username
+            user = keystone.users.create(username, password, username,
+                    tenant_id = tenant.id)
+
+if __name__ == '__main__':
+    main()
+
+
