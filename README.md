@@ -5,6 +5,9 @@ Crux is a utility for creating objects in the [Keystone][]
 authentication database.  It could be used to quickly provision test
 environments, or as part of an automated user-provisioning script.
 
+In general, `crux` is *idempotent* -- you can safely run it multiple
+times with the same inputs without bad things happening.
+
 [keystone]: http://docs.openstack.org/developer/keystone/
 
 Options
@@ -119,6 +122,15 @@ Bask in the glow of a lovely suite of test accounts:
     | 09ec0bdbe646425c83f5dbc1a67ec488 |  admin   | 8f0c82336e274b588b42b7e37c8779ff | d81b6b780206467fa0f2ab79c507cb71 |
     +----------------------------------+----------+----------------------------------+----------------------------------+
 -->
+
+Note that if you run `crux` a second time with the same input, it will
+not attempt to re-create objects that already exist:
+
+    $ crux -f users.yml
+    2013-10-21 crux WARNING set password for user user1 to secret1
+    2013-10-21 crux WARNING set password for user user2 to secret2
+    2013-10-21 crux WARNING set password for user demoadmin to secretadmin
+    2013-10-21 crux WARNING set password for user user3 to secret3
 
 License
 =======
