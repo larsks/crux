@@ -43,7 +43,15 @@ Create user `demo` in the `demo` tenant with password `secret`:
     2013-10-21 crux WARNING creating tenant demo
     2013-10-21 crux WARNING creating user demo with password secret
 
-Add role `admin` (in the `demo` tenant) to the `demo` user:
+Create user `demo` in the `demo` tenant with a random password:
+
+    # crux --user demo:demo::
+    2013-10-21 crux WARNING creating tenant demo
+    2013-10-21 crux WARNING creating user demo with password f1kJf9ZI5hfL
+
+Add role `admin` (in the `demo` tenant) to the `demo` user (this
+example assumes that the `demo` tenant already exists, which is why
+there is no "creating..." message):
 
     # crux --user demo:demo:admin:secret
     2013-10-21 crux WARNING set password for user demo to secret
