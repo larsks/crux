@@ -108,7 +108,9 @@ Bask in the glow of a lovely suite of test accounts:
     | 59798bdfa1504585bee5b12c7706a055 |   user2   |   True  |   user2   |
     +----------------------------------+-----------+---------+-----------+
 
-<!--
+<!--  (this output table is really too wide to display on most site
+      layouts)
+
     $ keystone user-role-list --tenant demo --user demoadmin
     +----------------------------------+----------+----------------------------------+----------------------------------+
     |                id                |   name   |             user_id              |            tenant_id             |
@@ -117,4 +119,23 @@ Bask in the glow of a lovely suite of test accounts:
     | 09ec0bdbe646425c83f5dbc1a67ec488 |  admin   | 8f0c82336e274b588b42b7e37c8779ff | d81b6b780206467fa0f2ab79c507cb71 |
     +----------------------------------+----------+----------------------------------+----------------------------------+
 -->
+
+License
+=======
+
+crux -- a utility for creating keystone objects  
+Copyright (C) 2013 Lars Kellogg-Stedman <lars@oddbit.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
