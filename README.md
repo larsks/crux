@@ -59,3 +59,9 @@ But you can explicitly add additional endpoints with `--append`:
     | c700a2c4df9f41e1979d1e330c73dccb | myservice  | messagequeue  | http://localhost:5254/                 |
     | e2615d049ea34c9289323a0d6e045a2f | myservice  | messagequeue  | http://otherhost:5254/                 |
 
+## Packages
+
+Crux packages for RHEL, CentOS, and Fedora are available from:
+
+- http://copr.fedoraproject.org/coprs/larsks/crux/
+
