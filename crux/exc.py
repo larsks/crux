@@ -1,0 +1,2 @@
+class CruxException (Exception):
+    pass
