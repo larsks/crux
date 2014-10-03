@@ -1,161 +1,61 @@
-crux: a keystone utility
-========================
+# crux: a keystone utility
 
-Crux is a utility for creating objects in the [Keystone][]
-authentication database.  It could be used to quickly provision test
-environments, or as part of an automated user-provisioning script.
+Crux is a utility for creating [Keystone][] tenants, roles, users,
+services, and endpoints.
 
-In general, `crux` is *idempotent* -- you can safely run it multiple
+Crux is designed to be *idempotent* -- you can safely run it multiple
 times with the same inputs without bad things happening.
 
 [keystone]: http://docs.openstack.org/developer/keystone/
 
-Options
-=======
+## Authentication
 
-- `--config`, `-f` *file* -- load definitions from *file*, a file in
-  [yaml][] syntax.  See below for an example.
+Crux gets authentication information from the standard OpenStack
+environment variables.  Like the `keystone` client, you can use a
+username/password pair via `OS_USERNAME`, `OS_PASSWORD`, etc, or you
+can use the admin token via `SERVICE_TOKEN` and `SERVICE_ENDPOINT`.
 
-- `--user`, `-u` *user:tenant:role:password* -- create user *user*
-  with primary tenant *tenant*.  Assign the user role *role* and set
-  the password to *password*.  Either *role* or *password* may be
-  empty; if *password* is empty `crux` will generate a random password
-  for the user.
+## Command line examples
 
-  The named role and tenant will be created if they do not exist.
+Create user `testuser` in the `testproject` tenant with a random
+password:
 
-- `--role`, `-r` *role* -- created named role *role*.
+    $ crux user-create -n testuser -t testproject -R
+    generated random password: lrw0zFe5uJ8IND1
+    creating new tenant
+    created tenant testproject (2c6577e7c3cd4721bbd0b3f4c2fbedc2)
+    using existing user testuser (5d483f53c38a44eebb04d04c14bf35e0)
 
-- `--tenant`, `-t` *tenant* -- create named tenant *tenant*.
+Create user `testuser2` in the same tenant with an explicit password:
 
-- `--pwlen` *pwlen* -- length of generated passwords.
+    $ crux user-create -n testuser2 -t testproject -p secret
+    using existing tenant testproject (2c6577e7c3cd4721bbd0b3f4c2fbedc2)
+    creating new user testuser2
+    created user testuser2 (689c732208db4ccca1844f72cd1844b3)
 
-- `--verbose`, `-v` -- enable verbose logging.
+Create an endpoint for service `myservice`, a `messagequeue` service:
 
-[yaml]: http://en.wikipedia.org/wiki/YAML
+    $ crux endpoint-create -n myservice -t messagequeue -I http://localhost:5254/
+    created new service myservice/messagequeue (00214ed4885d4417ae97c23e093a9845)
+    created new endpoint internalurl=http://localhost:5254/, publicurl=http://localhost:5254/, adminurl=http://localhost:5254/ (c700a2c4df9f41e1979d1e330c73dccb)
 
-Command line examples
-=====================
+Create a new endpoint for the `myservice` service.  This will fail by
+default (so that you do not accidentally create a new endpoint):
 
-Create user `demo` in the `demo` tenant with password `secret`:
+    $ crux endpoint-create -n myservice -t messagequeue -I http://otherhost:5254/
+    using existing service myservice/messagequeue (00214ed4885d4417ae97c23e093a9845)
+    using existing endpoint internalurl=http://localhost:5254/, publicurl=http://localhost:5254/, adminurl=http://localhost:5254/ (c700a2c4df9f41e1979d1e330c73dccb)
+    requested internal endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
+    requested public endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
+    requested admin endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
 
-    # crux --user demo:demo::secret
-    2013-10-21 crux WARNING creating tenant demo
-    2013-10-21 crux WARNING creating user demo with password secret
+But you can explicitly add additional endpoints with `--append`:
 
-Create user `demo` in the `demo` tenant with a random password:
+    $ crux endpoint-create -n myservice -t messagequeue -I http://otherhost:5254/ --append
+    using existing service myservice/messagequeue (00214ed4885d4417ae97c23e093a9845)
+    created new endpoint internalurl=http://otherhost:5254/, publicurl=http://otherhost:5254/, adminurl=http://otherhost:5254/ (e2615d049ea34c9289323a0d6e045a2f)
 
-    # crux --user demo:demo::
-    2013-10-21 crux WARNING creating tenant demo
-    2013-10-21 crux WARNING creating user demo with password f1kJf9ZI5hfL
-
-Add role `admin` (in the `demo` tenant) to the `demo` user (this
-example assumes that the `demo` tenant already exists, which is why
-there is no "creating..." message):
-
-    # crux --user demo:demo:admin:secret
-    2013-10-21 crux WARNING set password for user demo to secret
-    2013-10-21 crux WARNING added role admin to user demo
-
-Configuration file examples
-===========================
-
-Create a file named (e.g.) `users.yml` with the following content:
-
-    keystone:
-      tenants:
-      - name: demo
-        description: >
-          Use this tenant for the demonstration.
-      - name: alt_demo
-        description: >
-          An alternate tenant to demonstrate tenant isolation. This
-          tenant also has a very long description to demonstrate that
-          it's easy to create multi-line values using YAML syntax.
-      users:
-      - name: user1
-        tenant: demo
-        password: secret1
-      - name: user2
-        tenant: demo
-        password: secret2
-      - name: demoadmin
-        tenant: demo
-        password: secretadmin
-        role: admin
-      - name: user3
-        tenant: alt_demo
-        password: secret3
-
-Run `crux` like this:
-
-    $ crux -f users.yml
-    2013-10-21 crux WARNING creating tenant demo
-    2013-10-21 crux WARNING creating tenant alt_demo
-    2013-10-21 crux WARNING creating user user1 with password secret1
-    2013-10-21 crux WARNING creating user user2 with password secret2
-    2013-10-21 crux WARNING creating user demoadmin with password secretadmin
-    2013-10-21 crux WARNING added role admin to user demoadmin
-    2013-10-21 crux WARNING creating user user3 with password secret3
-
-Bask in the glow of a lovely suite of test accounts:
-
-    $ keystone tenant-list
-    +----------------------------------+----------+---------+
-    |                id                |   name   | enabled |
-    +----------------------------------+----------+---------+
-    | f8fb52537f24449d84b374479a45789b |  admin   |   True  |
-    | c61e548e5dc14d80b01155781f019de2 | alt_demo |   True  |
-    | d81b6b780206467fa0f2ab79c507cb71 |   demo   |   True  |
-    | 5030d1e4adae47578eb29d74e20acde4 | services |   True  |
-    +----------------------------------+----------+---------+
-
-    $ keystone user-list --tenant-id d81b6b780206467fa0f2ab79c507cb71
-    +----------------------------------+-----------+---------+-----------+
-    |                id                |    name   | enabled |   email   |
-    +----------------------------------+-----------+---------+-----------+
-    | 8f0c82336e274b588b42b7e37c8779ff | demoadmin |   True  | demoadmin |
-    | 7c6bf08e6a364c6ebc6b673f068e1520 |   user1   |   True  |   user1   |
-    | 59798bdfa1504585bee5b12c7706a055 |   user2   |   True  |   user2   |
-    +----------------------------------+-----------+---------+-----------+
-
-<!--  (this output table is really too wide to display on most site
-      layouts)
-
-    $ keystone user-role-list --tenant demo --user demoadmin
-    +----------------------------------+----------+----------------------------------+----------------------------------+
-    |                id                |   name   |             user_id              |            tenant_id             |
-    +----------------------------------+----------+----------------------------------+----------------------------------+
-    | 9fe2ff9ee4384b1894a90878d3e92bab | _member_ | 8f0c82336e274b588b42b7e37c8779ff | d81b6b780206467fa0f2ab79c507cb71 |
-    | 09ec0bdbe646425c83f5dbc1a67ec488 |  admin   | 8f0c82336e274b588b42b7e37c8779ff | d81b6b780206467fa0f2ab79c507cb71 |
-    +----------------------------------+----------+----------------------------------+----------------------------------+
--->
-
-Note that if you run `crux` a second time with the same input, it will
-not attempt to re-create objects that already exist:
-
-    $ crux -f users.yml
-    2013-10-21 crux WARNING set password for user user1 to secret1
-    2013-10-21 crux WARNING set password for user user2 to secret2
-    2013-10-21 crux WARNING set password for user demoadmin to secretadmin
-    2013-10-21 crux WARNING set password for user user3 to secret3
-
-License
-=======
-
-crux -- a utility for creating keystone objects  
-Copyright (C) 2013 Lars Kellogg-Stedman <lars@oddbit.com>
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    $ crux endpoint-list -t internal | grep messagequeue
+    | c700a2c4df9f41e1979d1e330c73dccb | myservice  | messagequeue  | http://localhost:5254/                 |
+    | e2615d049ea34c9289323a0d6e045a2f | myservice  | messagequeue  | http://otherhost:5254/                 |
 
