@@ -133,11 +133,9 @@ class UserCreate(Command):
             self.log.info('using existing role %s (%s)',
                      role.name, role.id)
         else:
-            self.log.info('creating new role %s',
-                          args.role)
-            role = None
-#            self.log.info('created user %s (%s)',
-#                          user.name, user.id)
+            role = client.roles.create(args.role)
+            self.log.info('created role %s (%s)',
+                          role.name, role.id)
 
         return role
 
