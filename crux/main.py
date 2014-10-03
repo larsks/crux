@@ -14,6 +14,7 @@ import crux.commands.user_list
 import crux.commands.user_create
 import crux.commands.endpoint_list
 import crux.commands.endpoint_create
+import crux.commands.tenant_create
 
 class Crux (App):
     log = logging.getLogger(__name__)
@@ -27,6 +28,8 @@ class Crux (App):
 
         self._client = None
 
+        self.command_manager.add_command('tenant-create',
+                                         crux.commands.tenant_create.TenantCreate)
         self.command_manager.add_command('user-list',
                                          crux.commands.user_list.UserList)
         self.command_manager.add_command('user-create',
