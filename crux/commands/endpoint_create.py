@@ -30,6 +30,11 @@ class EndpointCreate(Command):
                 raise CruxException('you must specify a value for --%s' %
                                     req)
 
+        if not args.publicurl:
+            args.publicurl = args.internalurl
+        if not args.adminurl:
+            args.adminurl = args.internalurl
+
         service = self.find_or_create_service(args)
         self.find_or_create_endpoint(args, service)
 
@@ -44,8 +49,6 @@ class EndpointCreate(Command):
             self.log.info('using existing service %s/%s (%s)',
                           service.name, service.type, service.id)
         else:
-            self.log.info('creating new service %s',
-                          args.service_name)
             service = client.services.create(
                 args.service_name,
                 args.service_type,
@@ -65,8 +68,12 @@ class EndpointCreate(Command):
 
         if res:
             endpoint = res[0]
-            self.log.info('using existing endpoint internalurl=%s (%s)',
-                          endpoint.internalurl, endpoint.id)
+            self.log.info('using existing endpoint internalurl=%s, '
+                          'publicurl=%s, adminurl=%s (%s)',
+                          endpoint.internalurl,
+                          endpoint.publicurl,
+                          endpoint.adminurl,
+                          endpoint.id)
             for endpointtype in ['internal', 'public', 'admin']:
                 want = getattr(args, '%surl' % endpointtype)
                 if want:
@@ -76,16 +83,17 @@ class EndpointCreate(Command):
                                       'match existing endpoint %s',
                                       endpointtype, want, have)
         else:
-            self.log.info('creating new endpoint internalurl=%s',
-                          args.internalurl)
             endpoint = client.endpoints.create(
                 args.region,
                 service.id,
                 args.publicurl,
                 args.adminurl,
                 args.internalurl)
-            self.log.info('created new endpoint internalurl=%s (%s)',
+            self.log.info('created new endpoint internalurl=%s, '
+                          'publicurl=%s, adminurl=%s (%s)',
                           endpoint.internalurl,
+                          endpoint.publicurl,
+                          endpoint.adminurl,
                           endpoint.id)
 
         return endpoint
