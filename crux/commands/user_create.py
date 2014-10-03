@@ -31,6 +31,8 @@ class UserCreate(Command):
         parser.add_argument('--disabled',
                             action='store_false',
                             dest='enabled')
+        parser.add_argument('--update',
+                            action='store_true')
         return parser
 
     def take_action(self, args):
@@ -45,9 +47,6 @@ class UserCreate(Command):
                               args.password_length))
             self.log.info('generated random password: %s',
                           args.password)
-
-        if not args.password:
-            raise CruxException('you must provide a value for --password')
 
         tenant = self.find_or_create_tenant(args)
         user = self.find_or_create_user(args, tenant)
@@ -108,7 +107,24 @@ class UserCreate(Command):
             user = res[0]
             self.log.info('using existing user %s (%s)',
                      user.name, user.id)
+
+            if args.update:
+                self.log.info('updating enabled=%s for user %s',
+                              args.enabled, user.name)
+                client.users.update(user, enabled=args.enabled)
+                if args.user_email:
+                    self.log.info('updating email for user %s',
+                                  user.name)
+                    client.users.update(user, email=args.user_email)
+                if args.password:
+                    self.log.info('updating password for user %s',
+                                  user.name)
+                    client.users.update_password(user, args.password)
         else:
+            if not args.password:
+                raise CruxException('cannot create a user with an empty '
+                                    'password')
+
             self.log.info('creating new user %s',
                           args.user_name)
             user = client.users.create(
