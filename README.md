@@ -39,15 +39,13 @@ Create an endpoint for service `myservice`, a `messagequeue` service:
     created new service myservice/messagequeue (00214ed4885d4417ae97c23e093a9845)
     created new endpoint internalurl=http://localhost:5254/, publicurl=http://localhost:5254/, adminurl=http://localhost:5254/ (c700a2c4df9f41e1979d1e330c73dccb)
 
-Create a new endpoint for the `myservice` service.  This will fail by
-default (so that you do not accidentally create a new endpoint):
+Create an additional endpoint for the `myservice` service.  This won't
+work by default (crux will just use the existing one) so so that you
+do not accidentally create a new endpoint:
 
     $ crux endpoint-create -n myservice -t messagequeue -I http://otherhost:5254/
     using existing service myservice/messagequeue (00214ed4885d4417ae97c23e093a9845)
     using existing endpoint internalurl=http://localhost:5254/, publicurl=http://localhost:5254/, adminurl=http://localhost:5254/ (c700a2c4df9f41e1979d1e330c73dccb)
-    requested internal endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
-    requested public endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
-    requested admin endpoint http://otherhost:5254/ does not match existing endpoint http://localhost:5254/
 
 But you can explicitly add additional endpoints with `--append`:
 
