@@ -78,8 +78,10 @@ class Crux (App):
 app = Crux()
 
 def main():
-    reqlog = logging.getLogger('requests')
-    reqlog.setLevel(logging.WARNING)
+    # prevent logging of http activity
+    for reqname in ['requests', 'urllib3']:
+        reqlog = logging.getLogger(reqname)
+        reqlog.setLevel(logging.WARNING)
     return app.run(sys.argv[1:])
 
 if __name__ == '__main__':
