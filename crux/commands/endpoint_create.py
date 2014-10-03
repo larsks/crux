@@ -23,6 +23,8 @@ class EndpointCreate(Command):
         parser.add_argument('--adminurl', '--admin', '-A')
         parser.add_argument('--append',
                             action='store_true')
+        parser.add_argument('--remove-all',
+                            action='store_true')
 
         return parser
 
@@ -68,6 +70,18 @@ class EndpointCreate(Command):
 
         res = [x for x in endpoints if x.service_id == service.id]
 
+        if args.remove_all:
+            for endpoint in res:
+                self.log.info('deleting endpoint internalurl=%s, '
+                              'publicurl=%s, adminurl=%s (%s)',
+                              endpoint.internalurl,
+                              endpoint.publicurl,
+                              endpoint.adminurl,
+                              endpoint.id)
+                client.endpoints.delete(endpoint.id)
+
+            res = []
+
         if res and not args.append:
             endpoint = res[0]
             self.log.info('using existing endpoint internalurl=%s, '
@@ -76,14 +90,6 @@ class EndpointCreate(Command):
                           endpoint.publicurl,
                           endpoint.adminurl,
                           endpoint.id)
-            for endpointtype in ['internal', 'public', 'admin']:
-                want = getattr(args, '%surl' % endpointtype)
-                if want:
-                    have = getattr(endpoint, '%surl' % endpointtype)
-                    if want != have:
-                        self.log.warn('requested %s endpoint %s does not '
-                                      'match existing endpoint %s',
-                                      endpointtype, want, have)
         else:
             endpoint = client.endpoints.create(
                 args.region,
