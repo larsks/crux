@@ -21,6 +21,8 @@ class EndpointCreate(Command):
         parser.add_argument('--publicurl', '--public', '-P')
         parser.add_argument('--internalurl', '--internal', '-I')
         parser.add_argument('--adminurl', '--admin', '-A')
+        parser.add_argument('--append',
+                            action='store_true')
 
         return parser
 
@@ -66,7 +68,7 @@ class EndpointCreate(Command):
 
         res = [x for x in endpoints if x.service_id == service.id]
 
-        if res:
+        if res and not args.append:
             endpoint = res[0]
             self.log.info('using existing endpoint internalurl=%s, '
                           'publicurl=%s, adminurl=%s (%s)',
