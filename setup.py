@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='crux',
-    version='6',
+    version='7',
     description='A tool for manipulating Keystone',
     author='Lars Kellogg-Stedman',
     author_email='lars@oddbit.com',
