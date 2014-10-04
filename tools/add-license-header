@@ -1,0 +1,20 @@
+#!/bin/sh
+
+TOPLEVEL=$(git rev-parse --show-toplevel)
+HEADER="${TOPLEVEL}/tools/license-header.txt"
+
+if ! [ -f "$HEADER" ]; then
+	echo "ERROR: missing license header $HEADER" >&2
+	exit 1
+fi
+
+tmpfile=$(mktemp licenseXXXXXX)
+trap "rm -f $tmpfile" EXIT
+
+find ${TOPLEVEL}/crux -name '*.py' -print |
+while read fn; do
+	echo "+ $fn"
+	sed '/# BEGIN LICENSE/,/# END LICENSE/ d' $fn > $tmpfile
+	cat $HEADER $tmpfile > $fn
+done
+
